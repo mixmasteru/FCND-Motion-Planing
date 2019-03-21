@@ -1,3 +1,57 @@
+# Rubics 3D Motion Planning
+
+## Explain the Starter Code
+
+### plan_path()
++ go into planning phase
++ load 2.5 map data from csv
++ call create grid from planning_utils
++ this returns a 2D space of the map data dependent on save distance and altitude
++ define local starting point from returned grid center
++ set local goal 10 m north, 10 m east fron start
++ call A* method from planning_utils to retrieve path
++ A* use heuristic function from planning_utils
++ convert path to waypoints 
++ set waypoints in drone
++ send waypoints to sim
+
+
+
+
+### planning_utils
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # FCND - 3D Motion Planning
 ![Quad Image](./misc/enroute.png)
 

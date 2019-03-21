@@ -3,7 +3,7 @@ from queue import PriorityQueue
 import numpy as np
 
 
-def create_grid(data, drone_altitude, safety_distance):
+def  create_grid(data, drone_altitude, safety_distance):
     """
     Returns a grid representation of a 2D configuration space
     based on given obstacle data, drone altitude and safety distance

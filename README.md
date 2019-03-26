@@ -2,7 +2,7 @@
 
 ## Explain the Starter Code
 
-### plan_path()
+### Explain the Starter Code : plan_path()
 + go into planning phase
 + load 2.5 map data from csv
 + call create grid from planning_utils
@@ -16,7 +16,11 @@
 + send waypoints to sim
 
 
+### Implementing Your Path Planning Algorithm
 
++ all done in plan_path() of motion_planing.py
++ medial axis skeletonization is used
++ collinearity_check for prune
 
 
 

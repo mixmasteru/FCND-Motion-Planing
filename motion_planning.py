@@ -6,7 +6,7 @@ import msgpack
 from enum import Enum, auto
 import numpy as np
 
-from planning_utils import a_star, heuristic, create_grid
+from planning_utils import a_star, heuristic, heuristic_func, create_grid, find_start_goal, load_lat_lon
 from prune import prune_path
 from udacidrone import Drone
 from udacidrone.connection import MavlinkConnection
@@ -117,38 +117,24 @@ class MotionPlanning(Drone):
         data = msgpack.dumps(self.waypoints)
         self.connection._master.write(data)
 
-    def find_start_goal(self, skel, start, goal):
-        skel_cells = np.transpose(skel.nonzero())
-        start_min_dist = np.linalg.norm(np.array(start) - np.array(skel_cells), axis=1).argmin()
-        near_start = skel_cells[start_min_dist]
-        goal_min_dist = np.linalg.norm(np.array(goal) - np.array(skel_cells), axis=1).argmin()
-        near_goal = skel_cells[goal_min_dist]
-
-        return near_start, near_goal
-
     def plan_path(self):
         self.flight_state = States.PLANNING
         print("Searching for a path ...")
-        TARGET_ALTITUDE = 10
+        TARGET_ALTITUDE = 5
         SAFETY_DISTANCE = 5
 
         self.target_position[2] = TARGET_ALTITUDE
 
-        # TODO: read lat0, lon0 from colliders into floating point values
-        with open('colliders.csv') as f:
-            first_line = f.readline()
+        # read lat0, lon0 from colliders into floating point values
+        lat0, lon0 = load_lat_lon()
 
-        latlong = first_line.split(',')
-        lat0 = float(latlong[0].replace("lat0 ", ""))
-        lon0 = float(latlong[1].replace("lon0 ", ""))
-
-        # TODO: set home position to (lon0, lat0, 0)
+        # set home position to (lon0, lat0, 0)
         self.set_home_position(lon0, lat0, 0)
-        # TODO: retrieve current global position
+        # retrieve current global position
         glob_p = self.global_position
-        # TODO: convert to current local position using global_to_local()
-        loc_p = global_to_local(self.global_position, self.global_home)
-        
+        # convert to current local position using global_to_local()
+        loc_p = global_to_local(glob_p, self.global_home)
+
         print('global home {0}, position {1}, local position {2}'.format(self.global_home, self.global_position,
                                                                          self.local_position))
         # Read in obstacle map
@@ -158,35 +144,34 @@ class MotionPlanning(Drone):
         grid, north_offset, east_offset = create_grid(data, TARGET_ALTITUDE, SAFETY_DISTANCE)
         print("North offset = {0}, east offset = {1}".format(north_offset, east_offset))
         # Define starting point on the grid (this is just grid center)
+        # convert start position to current position rather than map center
         grid_start = (-north_offset + int(loc_p[0]), -east_offset+int(loc_p[1]))
-        # TODO: convert start position to current position rather than map center
-
         # Set goal as some arbitrary position on the grid
-        grid_goal =  (grid_start[0]+150, grid_start[1]+10)#(-north_offset + 10, -east_offset + 100)
+        grid_goal =  (grid_start[0]+15, grid_start[1]+10)
         # TODO: adapt to set goal as latitude / longitude position and convert
-
+        #glob_goal = (37.792480, -122.397450, 0)
+        #loc_goal = global_to_local(glob_goal, self.global_position)
         # Run A* to find a path from start to goal
-        # TODO: add diagonal motions with a cost of sqrt(2) to your A* implementation
+        # path, _ = a_star(grid, heuristic, grid_start, grid_goal)
+        # add diagonal motions with a cost of sqrt(2) to your A* implementation
         # or move to a different search space such as a graph (not done here)
         print('Local Start and Goal: ', grid_start, grid_goal)
         skeleton = medial_axis(invert(grid))
-        skel_start, skel_goal = self.find_start_goal(skeleton, grid_start, grid_goal)
+        skel_start, skel_goal = find_start_goal(skeleton, grid_start, grid_goal)
         print(skel_start, skel_goal)
         # Run A* on the skeleton
-        path, cost = a_star(invert(skeleton).astype(np.int),heuristic, tuple(skel_start), tuple(skel_goal))
+        path, cost = a_star(invert(skeleton).astype(np.int), heuristic_func, tuple(skel_start), tuple(skel_goal))
 
-        #path, _ = a_star(grid, heuristic, grid_start, grid_goal)
-        # TODO: prune path to minimize number of waypoints
+        # prune path to minimize number of waypoints
         path = prune_path(path)
-        # TODO (if you're feeling ambitious): Try a different approach altogether!
 
-        plotter.plot_all(grid, grid_start, grid_goal, path, skeleton)
+        #plotter.plot_all(grid, grid_start, grid_goal, path, skeleton)
 
         # Convert path to waypoints
         waypoints = [[p[0] + north_offset, p[1] + east_offset, TARGET_ALTITUDE, 0] for p in path]
         # Set self.waypoints
         self.waypoints = waypoints
-        # TODO: send waypoints to sim (this is just for visualization of waypoints)
+        # send waypoints to sim (this is just for visualization of waypoints)
         self.send_waypoints()
 
     def start(self):
@@ -209,11 +194,8 @@ if __name__ == "__main__":
 
     #conn = MavlinkConnection('tcp:{0}:{1}'.format(args.host, args.port), timeout=60)
     conn = MavlinkConnection('tcp:127.0.0.1:5760', threaded=False, PX4=False)
-    #lat0 37.792480, lon0 -122.397450
-    drone = MotionPlanning(conn)
-    #drone.set_home_position(37.792480, -122.397450, 0);
-    #conn.set_home_position(37.792480, -122.397450, 0)
 
+    drone = MotionPlanning(conn)
 
     time.sleep(1)
 

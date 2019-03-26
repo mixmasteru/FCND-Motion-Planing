@@ -3,7 +3,18 @@ from queue import PriorityQueue
 import numpy as np
 
 
-def  create_grid(data, drone_altitude, safety_distance):
+def load_lat_lon():
+    with open('colliders.csv') as f:
+        first_line = f.readline()
+
+    latlon = first_line.split(',')
+    lat0 = float(latlon[0].replace("lat0 ", ""))
+    lon0 = float(latlon[1].replace("lon0 ", ""))
+
+    return lat0, lon0
+
+
+def create_grid(data, drone_altitude, safety_distance):
     """
     Returns a grid representation of a 2D configuration space
     based on given obstacle data, drone altitude and safety distance
@@ -147,3 +158,16 @@ def a_star(grid, h, start, goal):
 def heuristic(position, goal_position):
     return np.linalg.norm(np.array(position) - np.array(goal_position))
 
+
+def heuristic_func(position, goal_position):
+    return np.sqrt((position[0] - goal_position[0])**2 + (position[1] - goal_position[1])**2)
+
+
+def find_start_goal(skel, start, goal):
+    skel_cells = np.transpose(skel.nonzero())
+    start_min_dist = np.linalg.norm(np.array(start) - np.array(skel_cells), axis=1).argmin()
+    near_start = skel_cells[start_min_dist]
+    goal_min_dist = np.linalg.norm(np.array(goal) - np.array(skel_cells), axis=1).argmin()
+    near_goal = skel_cells[goal_min_dist]
+
+    return near_start, near_goal

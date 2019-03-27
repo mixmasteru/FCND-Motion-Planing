@@ -1,6 +1,5 @@
 import argparse
 import time
-from _threading_local import local
 
 import msgpack
 from enum import Enum, auto
@@ -147,7 +146,7 @@ class MotionPlanning(Drone):
         # convert start position to current position rather than map center
         grid_start = (-north_offset + int(loc_p[0]), -east_offset+int(loc_p[1]))
         # Set goal as some arbitrary position on the grid
-        grid_goal =  (grid_start[0]+15, grid_start[1]+10)
+        grid_goal = (grid_start[0]+100, grid_start[1]+100)
         # TODO: adapt to set goal as latitude / longitude position and convert
         #glob_goal = (37.792480, -122.397450, 0)
         #loc_goal = global_to_local(glob_goal, self.global_position)
@@ -165,10 +164,10 @@ class MotionPlanning(Drone):
         # prune path to minimize number of waypoints
         path = prune_path(path)
 
-        #plotter.plot_all(grid, grid_start, grid_goal, path, skeleton)
+        plotter.plot_all(grid, grid_start, grid_goal, path, skeleton)
 
         # Convert path to waypoints
-        waypoints = [[p[0] + north_offset, p[1] + east_offset, TARGET_ALTITUDE, 0] for p in path]
+        waypoints = [[int(p[0]) + north_offset, int(p[1]) + east_offset, TARGET_ALTITUDE, 0] for p in path]
         # Set self.waypoints
         self.waypoints = waypoints
         # send waypoints to sim (this is just for visualization of waypoints)

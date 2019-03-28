@@ -36,6 +36,7 @@ class MotionPlanning(Drone):
         self.waypoints = []
         self.in_mission = True
         self.check_state = {}
+        self.glob_goal = (0, 0, 0)
 
         # initial state
         self.flight_state = States.MANUAL
@@ -146,10 +147,9 @@ class MotionPlanning(Drone):
         # convert start position to current position rather than map center
         grid_start = (-north_offset + int(loc_p[0]), -east_offset+int(loc_p[1]))
         # Set goal as some arbitrary position on the grid
-        grid_goal = (grid_start[0]+100, grid_start[1]+100)
-        # TODO: adapt to set goal as latitude / longitude position and convert
-        #glob_goal = (37.792480, -122.397450, 0)
-        #loc_goal = global_to_local(glob_goal, self.global_position)
+        # set goal as latitude / longitude position and convert 37.792480, lon0 -122.397450
+        loc_goal = global_to_local(self.glob_goal, self.global_position)
+        grid_goal = (-north_offset + int(loc_goal[0]), -east_offset+int(loc_goal[1]))
         # Run A* to find a path from start to goal
         # path, _ = a_star(grid, heuristic, grid_start, grid_goal)
         # add diagonal motions with a cost of sqrt(2) to your A* implementation
@@ -171,11 +171,12 @@ class MotionPlanning(Drone):
         # Set self.waypoints
         self.waypoints = waypoints
         # send waypoints to sim (this is just for visualization of waypoints)
+        self.connection.start()
         self.send_waypoints()
 
-    def start(self):
+    def start(self, glob_goal):
         self.start_log("Logs", "NavLog.txt")
-
+        self.glob_goal = glob_goal
         print("starting connection")
         self.connection.start()
         # Only required if they do threaded
@@ -197,5 +198,5 @@ if __name__ == "__main__":
     drone = MotionPlanning(conn)
 
     time.sleep(1)
-
-    drone.start()
+    glob_goal = (-122.396450, 37.793480, 0)
+    drone.start(glob_goal)
